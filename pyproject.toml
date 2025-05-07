@@ -1,0 +1,4 @@
+[project]
+name = "lsp"
+dynamic = ["version"]
+scripts.lsp = "main:main"
