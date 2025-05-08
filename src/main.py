@@ -1,5 +1,6 @@
 import re
-import hunspell
+from hunspell import HunSpell
+from typing import List, Tuple, Optional
 from pygls.server import LanguageServer
 from lsprotocol.types import (
     CodeAction,
@@ -18,98 +19,88 @@ from lsprotocol.types import (
 
 
 class LSP(LanguageServer):
-    def get_words(self, text) -> list[tuple[int, int, int, str]]:
-        words = []
-        line = 0
-        line_start = 0
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.hunspell = HunSpell(
+            "/usr/share/hunspell/en_US.dic", "/usr/share/hunspell/en_US.aff"
+        )
+        self.diagnostics: List[Diagnostic] = []
+        self._register_handlers()
 
-        for word_boundary in re.finditer(r"\S+", text):
-            start, end = word_boundary.start(), word_boundary.end()
-            word = text[start:end]
+    def _register_handlers(self) -> None:
+        @self.feature(TEXT_DOCUMENT_DID_CHANGE)
+        @self.feature(TEXT_DOCUMENT_DID_OPEN)
+        def on_document_change(params: DidChangeTextDocumentParams) -> None:
+            document = self.workspace.get_document(params.text_document.uri)
+            words = self._get_words(document.source)
+            self.diagnostics = self._get_diagnostics(words)
+            self.publish_diagnostics(params.text_document.uri, self.diagnostics)
 
-            word_lines = text.count("\n", line_start, start)
-            if word_lines > 0:
-                line += word_lines
-                line_start = text.rfind("\n", 0, start) + 1
+        @self.feature(TEXT_DOCUMENT_CODE_ACTION)
+        def on_code_action(params: CodeActionParams) -> Optional[List[CodeAction]]:
+            return self._get_actions(params.text_document.uri, params.range)
 
-            words.append((line, start - line_start, end - line_start, word))
+    def _get_words(self, document: str) -> List[Tuple[int, int, int, str]]:
+        words: List[Tuple[int, int, int, str]] = []
+        for match in re.finditer(r"\S+", document):
+            line = document.count("\n", 0, match.start())
+            line_start = document.rfind("\n", 0, match.start()) + 1
+
+            word = (
+                line,
+                match.start() - line_start,
+                match.end() - line_start,
+                document[match.start() : match.end()],
+            )
+            words.append(word)
+
         return words
 
-    def get_diagnostics(self, words) -> list[Diagnostic]:
-        diagnostics: list[Diagnostic] = []
-        for word in words:
-            if not self.hunspell.spell(word[3]):
-                range = Range(
-                    Position(word[0], word[1]),
-                    Position(word[0], word[2]),
+    def _get_diagnostics(
+        self, words: List[Tuple[int, int, int, str]]
+    ) -> List[Diagnostic]:
+        diagnostics: List[Diagnostic] = []
+        for line, start, end, word in words:
+            if not self.hunspell.spell(word):
+                diagnostic = Diagnostic(
+                    Range(Position(line, start), Position(line, end)),
+                    word,
+                    DiagnosticSeverity.Error,
                 )
-                diagnostic = Diagnostic(range, word[3], DiagnosticSeverity.Error)
                 diagnostics.append(diagnostic)
 
         return diagnostics
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.hunspell = hunspell.HunSpell(
-            "/usr/share/hunspell/en_US.dic", "/usr/share/hunspell/en_US.aff"
-        )
-        self.diagnostics: list[Diagnostic] = []
+    def _get_actions(self, uri: str, cursor: Range) -> Optional[List[CodeAction]]:
+        for diagnostic in self.diagnostics:
+            if (
+                diagnostic.range.start.line
+                <= cursor.start.line
+                <= diagnostic.range.end.line
+                and diagnostic.range.start.character
+                <= cursor.start.character
+                <= diagnostic.range.end.character
+            ):
+                suggestions = self.hunspell.suggest(diagnostic.message)
+                if not suggestions:
+                    break
 
-        @self.feature(TEXT_DOCUMENT_DID_CHANGE)
-        @self.feature(TEXT_DOCUMENT_DID_OPEN)
-        def _(params: DidChangeTextDocumentParams):
-            text = self.workspace.get_document(params.text_document.uri).source
-            words = self.get_words(text)
-            self.diagnostics = self.get_diagnostics(words)
-            self.publish_diagnostics(params.text_document.uri, self.diagnostics)
-
-        @self.feature(TEXT_DOCUMENT_CODE_ACTION)
-        def _(params: CodeActionParams):
-            uri = params.text_document.uri
-
-            cursor = (
-                params.range.start.character,
-                params.range.end.character,
-                params.range.start.line,
-                params.range.end.line,
-            )
-
-            diags: list[tuple[int, int, int, int, str]] = [
-                (
-                    i.range.start.character,
-                    i.range.end.character,
-                    i.range.start.line,
-                    i.range.end.line,
-                    i.message,
-                )
-                for i in self.diagnostics
-            ]
-
-            for diag in diags:
-                if (
-                    diag[0] <= cursor[0]
-                    and cursor[1] <= diag[1]
-                    and diag[2] <= cursor[2]
-                    and cursor[3] <= diag[3]
-                ):
-                    suggestions = self.hunspell.suggest(diag[4])
-                    range = Range(
-                        Position(diag[2], diag[0]),
-                        Position(diag[3], diag[1]),
+                actions = [
+                    CodeAction(
+                        title=suggestion,
+                        edit=WorkspaceEdit(
+                            {uri: [TextEdit(diagnostic.range, suggestion)]}
+                        ),
                     )
+                    for suggestion in suggestions
+                ]
 
-                    actions: list[CodeAction] = []
-                    for i in suggestions:
-                        changes = {uri: [TextEdit(range, i)]}
-                        edit = WorkspaceEdit(changes)
-                        action = CodeAction(
-                            title=i,
-                            edit=edit,
-                        )
-                        actions.append(action)
-
-                    return actions
+                return actions
 
 
 def main():
-    LSP("", "").start_io()
+    LSP("lsp", "0.0.1").start_io()
+
+
+if __name__ == "__main__":
+    main()
