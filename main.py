@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import re
 import sys
@@ -124,9 +124,5 @@ class LSP(LanguageServer):
                 return actions
 
 
-def main():
-    LSP("", "").start_io()
-
-
 if __name__ == "__main__":
-    main()
+    LSP("", "").start_io()
