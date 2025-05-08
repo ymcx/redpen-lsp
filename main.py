@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
+import asyncio
 import re
 import sys
+from asyncio import Event, Task, CancelledError
 from hunspell import HunSpell
 from typing import List, Tuple, Optional, Union
 from pygls.server import LanguageServer
@@ -23,36 +25,47 @@ from lsprotocol.types import (
 )
 
 
-class LSP(LanguageServer):
+class Server(LanguageServer):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.hunspell = None
         self.diagnostics: List[Diagnostic] = []
+        self.task: Optional[Task] = None
         self._register_handlers()
 
     def _register_handlers(self) -> None:
         @self.feature(TEXT_DOCUMENT_DID_CHANGE)
         @self.feature(TEXT_DOCUMENT_DID_OPEN)
-        def on_document_change(
+        async def on_document_change(
             params: Union[DidOpenTextDocumentParams, DidChangeTextDocumentParams],
         ) -> None:
-            document = self.workspace.get_document(params.text_document.uri)
-            if not self.hunspell:
-                self.hunspell = self._get_hunspell(document.source)
+            if self.task and not self.task.done():
+                self.task.cancel()
 
-            words = self._get_words(document.source)
-            self.diagnostics = self._get_diagnostics(words)
-            self.publish_diagnostics(params.text_document.uri, self.diagnostics)
+            self.task = asyncio.create_task(self._on_document_change(params))
 
         @self.feature(TEXT_DOCUMENT_CODE_ACTION)
         def on_code_action(params: CodeActionParams) -> Optional[List[CodeAction]]:
             return self._get_actions(params.text_document.uri, params.range)
 
-        def on_ignore(*args) -> None:
+        async def on_ignore(*args) -> None:
             word = args[0][0]
             self.hunspell.add(word)
 
         self.command("ignore")(on_ignore)
+
+    async def _on_document_change(
+        self, params: Union[DidOpenTextDocumentParams, DidChangeTextDocumentParams]
+    ) -> None:
+        await asyncio.sleep(0.5)
+
+        document = self.workspace.get_document(params.text_document.uri)
+        if not self.hunspell:
+            self.hunspell = self._get_hunspell(document.source)
+
+        words = self._get_words(document.source)
+        self.diagnostics = self._get_diagnostics(words)
+        self.publish_diagnostics(params.text_document.uri, self.diagnostics)
 
     def _get_hunspell(self, document: str) -> HunSpell:
         line = document.split("\n")[0].split(" ")
@@ -125,4 +138,4 @@ class LSP(LanguageServer):
 
 
 if __name__ == "__main__":
-    LSP("", "").start_io()
+    Server("", "").start_io()
