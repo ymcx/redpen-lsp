@@ -5,6 +5,7 @@ from typing import List, Tuple, Optional, Union
 from pygls.server import LanguageServer
 from lsprotocol.types import (
     CodeAction,
+    Command,
     DidOpenTextDocumentParams,
     TextEdit,
     CodeActionParams,
@@ -44,6 +45,12 @@ class LSP(LanguageServer):
         @self.feature(TEXT_DOCUMENT_CODE_ACTION)
         def on_code_action(params: CodeActionParams) -> Optional[List[CodeAction]]:
             return self._get_actions(params.text_document.uri, params.range)
+
+        def on_ignore(*args):
+            word = args[0][0]
+            self.hunspell.add(word)
+
+        self.command("ignore")(on_ignore)
 
     def _get_hunspell(self, document: str) -> HunSpell:
         line = document.split("\n")[0].split(" ")
@@ -91,6 +98,7 @@ class LSP(LanguageServer):
         return diagnostics
 
     def _get_actions(self, uri: str, cursor: Range) -> Optional[List[CodeAction]]:
+        actions: List[CodeAction] = []
         for diagnostic in self.diagnostics:
             if (
                 diagnostic.range.start.line
@@ -100,19 +108,16 @@ class LSP(LanguageServer):
                 <= cursor.start.character
                 <= diagnostic.range.end.character
             ):
-                suggestions = self.hunspell.suggest(diagnostic.message)
-                if not suggestions:
-                    break
+                command = Command("Ignore suggestion", "ignore", [diagnostic.message])
+                action = CodeAction(title="Ignore suggestion", command=command)
+                actions.append(action)
 
-                actions = [
-                    CodeAction(
-                        title=suggestion,
-                        edit=WorkspaceEdit(
-                            {uri: [TextEdit(diagnostic.range, suggestion)]}
-                        ),
-                    )
-                    for suggestion in suggestions
-                ]
+                suggestions = self.hunspell.suggest(diagnostic.message)
+                for suggestion in suggestions:
+                    edit = TextEdit(diagnostic.range, suggestion)
+                    edit = WorkspaceEdit({uri: [edit]})
+                    action = CodeAction(title=suggestion, edit=edit)
+                    actions.append(action)
 
                 return actions
 
