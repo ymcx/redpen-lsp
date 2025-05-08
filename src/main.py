@@ -1,9 +1,11 @@
 import re
+import sys
 from hunspell import HunSpell
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 from pygls.server import LanguageServer
 from lsprotocol.types import (
     CodeAction,
+    DidOpenTextDocumentParams,
     TextEdit,
     CodeActionParams,
     Diagnostic,
@@ -21,17 +23,20 @@ from lsprotocol.types import (
 class LSP(LanguageServer):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.hunspell = HunSpell(
-            "/usr/share/hunspell/en_US.dic", "/usr/share/hunspell/en_US.aff"
-        )
+        self.hunspell = None
         self.diagnostics: List[Diagnostic] = []
         self._register_handlers()
 
     def _register_handlers(self) -> None:
         @self.feature(TEXT_DOCUMENT_DID_CHANGE)
         @self.feature(TEXT_DOCUMENT_DID_OPEN)
-        def on_document_change(params: DidChangeTextDocumentParams) -> None:
+        def on_document_change(
+            params: Union[DidOpenTextDocumentParams, DidChangeTextDocumentParams],
+        ) -> None:
             document = self.workspace.get_document(params.text_document.uri)
+            if not self.hunspell:
+                self.hunspell = self._get_hunspell(document.source)
+
             words = self._get_words(document.source)
             self.diagnostics = self._get_diagnostics(words)
             self.publish_diagnostics(params.text_document.uri, self.diagnostics)
@@ -39,6 +44,20 @@ class LSP(LanguageServer):
         @self.feature(TEXT_DOCUMENT_CODE_ACTION)
         def on_code_action(params: CodeActionParams) -> Optional[List[CodeAction]]:
             return self._get_actions(params.text_document.uri, params.range)
+
+    def _get_hunspell(self, document: str) -> HunSpell:
+        line = document.split("\n")[0].split(" ")
+        directory = "/usr/share/hunspell"
+        language = "en_US"
+
+        if len(sys.argv) >= 2:
+            directory = sys.argv[1]
+        if len(sys.argv) >= 3:
+            language = sys.argv[2]
+        if len(line) >= 2 and line[0] == "#":
+            language = line[1]
+
+        return HunSpell(f"{directory}/{language}.dic", f"{directory}/{language}.aff")
 
     def _get_words(self, document: str) -> List[Tuple[int, int, int, str]]:
         words: List[Tuple[int, int, int, str]] = []
