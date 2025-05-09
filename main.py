@@ -3,7 +3,7 @@
 import asyncio
 import re
 import sys
-from asyncio import Event, Task, CancelledError
+from asyncio import Task
 from hunspell import HunSpell
 from typing import List, Tuple, Optional, Union
 from pygls.server import LanguageServer
@@ -71,6 +71,7 @@ class Server(LanguageServer):
         line = document.split("\n")[0].split(" ")
         directory = "/usr/share/hunspell"
         language = "en_US"
+        ignore: List[str] = []
 
         if len(sys.argv) >= 2:
             directory = sys.argv[1]
@@ -78,12 +79,18 @@ class Server(LanguageServer):
             language = sys.argv[2]
         if len(line) >= 2 and line[0] == "#":
             language = line[1]
+            ignore.append(language)
 
-        return HunSpell(f"{directory}/{language}.dic", f"{directory}/{language}.aff")
+        file = f"{directory}/{language}"
+        hunspell = HunSpell(f"{file}.dic", f"{file}.aff")
+        for i in ignore:
+            hunspell.add(i)
+
+        return hunspell
 
     def _get_words(self, document: str) -> List[Tuple[int, int, int, str]]:
         words: List[Tuple[int, int, int, str]] = []
-        for match in re.finditer(r"\S+", document):
+        for match in re.finditer(r"\w+('\w+)*", document):
             line = document.count("\n", 0, match.start())
             line_start = document.rfind("\n", 0, match.start()) + 1
 
