@@ -1,4 +1,8 @@
-# Redpen language server
+<h1>
+
+![Logo](logo.svg)
+
+</h1>
 
 ![Showcase](showcase.gif)
 

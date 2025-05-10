@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="97.921501mm"
+   height="24.778805mm"
+   viewBox="0 0 97.9215 24.778805"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   sodipodi:docname="logo.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#000000"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="1.151417"
+     inkscape:cx="306.14453"
+     inkscape:cy="112.03587"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="0"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <filter
+       style="color-interpolation-filters:sRGB"
+       inkscape:menu-tooltip="Basic noise fill texture; adjust color in Flood"
+       inkscape:label="Colorize Turbulent"
+       inkscape:menu="Overlays"
+       id="filter350"
+       x="0"
+       y="0"
+       width="1"
+       height="1">
+      <feColorMatrix
+         type="saturate"
+         result="result5"
+         values="1"
+         id="feColorMatrix347" />
+      <feFlood
+         result="result1"
+         flood-color="rgb(255,0,0)"
+         id="feFlood347" />
+      <feComposite
+         result="fbSourceGraphic"
+         operator="in"
+         in2="SourceGraphic"
+         id="feComposite347" />
+      <feTurbulence
+         type="fractalNoise"
+         baseFrequency="0.035"
+         numOctaves="5"
+         id="feTurbulence347" />
+      <feColorMatrix
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 3 -1 "
+         result="result0"
+         id="feColorMatrix348" />
+      <feFlood
+         result="result1"
+         flood-color="rgb(0,177,71)"
+         flood-opacity="1"
+         id="feFlood348" />
+      <feBlend
+         result="result2"
+         in="result1"
+         mode="normal"
+         in2="fbSourceGraphic"
+         id="feBlend348" />
+      <feComposite
+         result="result3"
+         operator="out"
+         in2="result0"
+         id="feComposite348" />
+      <feComposite
+         operator="atop"
+         in2="fbSourceGraphic"
+         id="feComposite349" />
+      <feColorMatrix
+         result="result4"
+         type="hueRotate"
+         values="0"
+         id="feColorMatrix349" />
+      <feBlend
+         mode="lighten"
+         in2="result5"
+         id="feBlend349" />
+      <feColorMatrix
+         type="hueRotate"
+         values="0"
+         id="feColorMatrix350" />
+    </filter>
+  </defs>
+  <rect
+     style="display:none;opacity:1;fill:#2b2b2b;fill-opacity:1;stroke:none;stroke-width:0;stroke-dasharray:none"
+     id="rect31"
+     width="37.019512"
+     height="16.72823"
+     x="46.960747"
+     y="75.266655" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     style="display:inline"
+     transform="translate(-14.013749,-39.858181)">
+    <text
+       xml:space="preserve"
+       style="font-size:24.6944px;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#000000;stroke-width:0.264583;filter:url(#filter350)"
+       x="12.349771"
+       y="60.42881"
+       id="text1"><tspan
+         sodipodi:role="line"
+         id="tspan1"
+         style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-size:24.6944px;font-family:Vazirmatn;-inkscape-font-specification:'Vazirmatn Heavy';fill:#ffffff;fill-opacity:1;stroke-width:0.264583"
+         x="12.349771"
+         y="60.42881"><tspan
+   style="font-size:24.6944px;fill:#d64545;fill-opacity:1"
+   id="tspan33">[<tspan
+   style="font-size:24.6944px;fill:#ffffff;fill-opacity:1"
+   id="tspan35">Red</tspan>]</tspan>Pen</tspan></text>
+  </g>
+</svg>
