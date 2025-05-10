@@ -1,5 +1,7 @@
 # Redpen language server
 
+![Showcase](showcase.gif)
+
 An implementation of the [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) (LSP) designed to serve as the missing spell checker for code editors such as VSCode, Vim, Helix, and other editors that support LSP. It underlines misspelled words and suggests potential corrections using [Hunspell](https://github.com/hunspell/hunspell).
 
 # Installation
